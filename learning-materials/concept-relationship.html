@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Agent / 大模型上下文 / Skill —— 关系说明</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", sans-serif;
+    max-width: 960px;
+    margin: 32px auto;
+    padding: 0 24px;
+    line-height: 1.7;
+    color: #1f2328;
+    background: #fafbfc;
+  }
+  h1 { border-bottom: 2px solid #0969da; padding-bottom: 8px; }
+  h2 { color: #0969da; margin-top: 32px; }
+  h3 { color: #1f2328; }
+  .meta { color: #57606a; font-size: 0.9em; margin-bottom: 24px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    background: #fff;
+  }
+  th, td {
+    border: 1px solid #d0d7de;
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #f6f8fa; }
+  blockquote {
+    border-left: 4px solid #d0d7de;
+    margin: 16px 0;
+    padding: 4px 16px;
+    color: #57606a;
+    background: #f6f8fa;
+  }
+  code {
+    background: #f6f8fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 0.9em;
+  }
+  .mermaid { background: #fff; padding: 16px; border: 1px solid #d0d7de; border-radius: 6px; }
+  .note {
+    background: #fff8c5;
+    border-left: 4px solid #d4a72c;
+    padding: 8px 16px;
+    margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Agent / 大模型上下文 / Skill —— 三者关系</h1>
+
+<p class="meta">课程作业个人理解 · 仅代表本人当前认知，欢迎指正</p>
+
+<p>
+最近接触"Agent"、"上下文"、"Skill"这三个词经常同时出现，看似都是大模型应用的同义词，
+实际上各自承担的角色并不重叠。这份笔记按我个人理解把它们拆开来讲，重点回答两件事：
+</p>
+
+<ul>
+  <li>大模型<b>上下文</b>是怎么影响 Agent 运行的？</li>
+  <li><b>Skill</b> 如何沉淀可复用的任务知识？</li>
+</ul>
+
+<hr>
+
+<h2>一、三个概念分别是什么</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>概念</th>
+      <th>我的一句话定义</th>
+      <th>类比</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Agent</b></td>
+      <td>由大模型驱动、能调用工具、自主分步完成任务的程序</td>
+      <td>有手有脚的员工</td>
+    </tr>
+    <tr>
+      <td><b>大模型上下文</b></td>
+      <td>本轮对话里模型能"看见"的所有信息（系统提示、对话历史、工具返回值）</td>
+      <td>员工此刻办公桌上摆的资料</td>
+    </tr>
+    <tr>
+      <td><b>Skill</b></td>
+      <td>预先写好的、可被加载进上下文的"任务知识包"（提示词模板、最佳实践、领域经验）</td>
+      <td>员工桌上的岗位 SOP 手册</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>二、整体关系图</h2>
+
+<div class="mermaid">
+flowchart LR
+    User[用户/外部触发] -->|发起任务| Agent
+    Skill[Skill 知识包] -->|按需加载| Ctx
+    Ctx[大模型上下文] -->|作为输入| LLM[大模型]
+    LLM -->|生成下一步行动| Agent
+    Agent -->|调用工具/读文件/查网页| Tool[外部工具]
+    Tool -->|返回结果| Ctx
+    History[历史对话] --> Ctx
+</div>
+
+<p>
+可以这样记：<b>Skill 是"放在抽屉里的"知识，Context 是"摆在桌上"的当前材料，Agent 是"动手干活"的那个角色。</b>
+</p>
+
+<h2>三、重点一：大模型上下文如何影响 Agent 的运行</h2>
+
+<p>
+Agent 每走一步都要把"目前桌上有啥"完整喂给大模型，这个"桌上的全部材料"就是<b>上下文窗口</b>。
+我目前看到的几个具体影响：
+</p>
+
+<h3>3.1 上下文决定了 Agent "知不知道"</h3>
+<ul>
+  <li>用户初始需求没写清的细节 → 必须在上下文里写明，模型才能处理</li>
+  <li>工具调用的返回值 → 必须拼回上下文，下一步模型才知道发生了什么</li>
+  <li>之前的决策 → 上下文不携带，Agent 就会"失忆"地重复犯同一个错</li>
+</ul>
+
+<h3>3.2 上下文长度是硬约束</h3>
+<ul>
+  <li>几乎所有大模型都有上下文上限（几千到几十万个 token）</li>
+  <li>Agent 跑得越久，对话越长，历史被挤出去，模型表现就会"突然变笨"</li>
+  <li>所以 Agent 通常要做<b>上下文管理</b>：截断、压缩、把不重要的丢出去，只留当下决策必需的信息</li>
+</ul>
+
+<h3>3.3 上下文污染会让 Agent 卡死</h3>
+<div class="note">
+真实坑：工具返回的错误信息、用户的中途打断、上一轮的多余猜测，都可能被反复带进上下文，
+让模型陷入"在错的信息上反复推理"的循环。这是 Agent 工程里非常常见的稳定性问题。
+</div>
+
+<table>
+  <thead>
+    <tr><th>现象</th><th>通常原因</th><th>常见对策</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>模型反复追问同一个问题</td><td>上轮回答没被携带回来</td><td>把回答显式追加到上下文</td></tr>
+    <tr><td>模型陷入错误路径</td><td>错误信息被反复喂入</td><td>触发失败后清理对应上下文</td></tr>
+    <tr><td>长任务后期变笨</td><td>上下文超长，关键信息被截掉</td><td>定期做摘要压缩、丢弃过期片段</td></tr>
+    <tr><td>用户改主意后模型还在按旧计划做</td><td>新指令没覆盖旧上下文</td><td>重置上下文或追加显式"忽略之前"</td></tr>
+  </tbody>
+</table>
+
+<h2>四、重点二：Skill 如何沉淀可复用任务知识</h2>
+
+<p>
+同一个任务，下次还要做——这是 Skill 存在的根本理由。我理解的沉淀方式有三层：
+</p>
+
+<h3>4.1 Skill 的最小形态：一段提示词</h3>
+<blockquote>
+  例：让模型写 SQL 时附带"先用 EXPLAIN 检查执行计划、再决定是否建索引"——这就是一个微型 Skill。
+</blockquote>
+
+<h3>4.2 Skill 的工程形态：可被加载的模块</h3>
+<p>
+工程上 Skill 通常是一个目录（或一个对象），里面包含：</p>
+<ul>
+  <li><code>SKILL.md</code>：描述这个 Skill 是干什么的、什么时候用、怎么用</li>
+  <li><code>references/</code>：详细参考资料、领域知识</li>
+  <li>必要时附带脚本或资源</li>
+</ul>
+
+<p>
+Agent 在需要时把它的"系统说明"或"参考材料"<b>临时注入</b>到当前上下文里，
+任务结束就把这段上下文丢弃。这样 Skill 不会污染 Agent 的默认行为，又能在需要时被检索到。
+</p>
+
+<h3>4.3 Skill 沉淀的关键好处</h3>
+
+<table>
+  <thead>
+    <tr><th>沉淀前</th><th>沉淀后</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>每次任务都要重新告诉模型怎么做</td>
+      <td>Agent 自动加载 Skill，按已有流程跑</td>
+    </tr>
+    <tr>
+      <td>经验只存在某次对话里</td>
+      <td>经验写进 Skill，下次还能用</td>
+    </tr>
+    <tr>
+      <td>不同人/不同项目重复发明轮子</td>
+      <td>团队共享一份 Skill，行为一致</td>
+    </tr>
+    <tr>
+      <td>提示词越堆越长，挤占上下文</td>
+      <td>按需加载，不用时不占窗口</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>五、一张图把它们串起来</h2>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Skill层["Skill 层（持久化）"]
+        S1[Skill A<br/>如 SQL 优化]
+        S2[Skill B<br/>如 数据分析]
+        S3[Skill C<br/>如 代码评审]
+    end
+    subgraph 上下文层["上下文层（一次任务内有效）"]
+        Ctx[当前对话历史 + 临时材料]
+    end
+    subgraph Agent层["Agent 层（运行时）"]
+        A[Agent<br/>决策 + 工具调用]
+        LLM[大模型]
+    end
+
+    S1 -.按需加载.-> Ctx
+    S2 -.按需加载.-> Ctx
+    S3 -.按需加载.-> Ctx
+    Ctx --> LLM
+    LLM --> A
+    A -->|调用工具| Tool[外部工具]
+    Tool -->|结果回填| Ctx
+</div>
+
+<p>
+读这张图的关键是看<b>箭头方向</b>：
+</p>
+<ul>
+  <li>Skill → 上下文 → 大模型 → Agent → 工具 → 回到上下文，形成 Agent 的运行循环</li>
+  <li>Skill 本身<b>不直接参与</b>运行时，它的存在形式是"被加载到上下文的材料"</li>
+</ul>
+
+<h2>六、容易混淆的点</h2>
+
+<table>
+  <thead>
+    <tr><th>易混说法</th><th>我目前的理解</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>"Skill 就是一段 Prompt"</td>
+      <td>形态上没错，但不只 Prompt。Skill 还可以包含工作流、参考资料、校验脚本</td>
+    </tr>
+    <tr>
+      <td>"上下文越长 Agent 越聪明"</td>
+      <td>不一定。超长上下文里"关键信息被淹没"反而更笨；做摘要、按需加载才是关键</td>
+    </tr>
+    <tr>
+      <td>"Agent 越多越好"</td>
+      <td>单 Agent 也能完成多数任务，多 Agent 适合角色清晰、可拆解的场景；不是越大越强</td>
+    </tr>
+    <tr>
+      <td>"Skill 一旦写好就万能"</td>
+      <td>Skill 也需要维护。模型/工具变了，Skill 可能失效</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>七、参考来源</h2>
+
+<ul>
+  <li>OpenAI Function Calling 文档（Agent 与工具调用）</li>
+  <li>Anthropic Prompt Engineering 指南（上下文工程相关）</li>
+  <li>LangChain / LlamaIndex 文档（Agent + Skill / Tool 的工程实现）</li>
+  <li>课程讲义《大数据与人工智能》第 X 章（本课程）</li>
+</ul>
+
+<hr>
+<p class="meta">说明：以上内容由 AI 草拟，本人阅读核对、补充个人理解后定稿。</p>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default' });
+</script>
+
+</body>
+</html>
