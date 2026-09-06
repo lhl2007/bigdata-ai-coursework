@@ -1,0 +1,6 @@
+# 保留此目录
+
+把这次作业用到的数据放到这里。
+
+- 小文件（CSV/JSON/小 parquet）：可以直接入仓
+- 大文件 (>10MB)：建议用 [Git LFS](https://git-lfs.github.com/)，或上传到外部存储后在 `data/README.md` 里写明下载链接

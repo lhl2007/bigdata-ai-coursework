@@ -10,13 +10,16 @@
 
 ```
 .
-├── README.md          本文件
-├── homework-XX/       每次作业单独一个子目录
-│   ├── code/          源代码
-│   ├── report/        实验报告 / PDF
-│   └── README.md      作业说明
-├── notes/             课堂笔记与总结
-└── data/              课程使用的数据集（视大小决定是否入仓）
+├── README.md           本文件
+├── .gitignore          Python / 数据科学忽略规则
+├── .gitmessage         Commit 信息模板（启用见下方）
+├── push.bat            一键推送脚本（双击即可）
+├── homework-XX/        每次作业一个子目录
+│   ├── README.md       作业说明
+│   ├── code/           源代码
+│   ├── report/         实验报告 / PDF
+│   └── data/           作业用数据
+└── notes/              课堂笔记与总结
 ```
 
 ## 提交流程
@@ -28,13 +31,21 @@
 2. 修改/新增文件后：
    ```bash
    git add .
-   git commit -m "homework-XX: <简短说明>"
-   git push
+   git commit                                  # 不带 -m，使用 .gitmessage 模板
+   git push origin main
    ```
-3. 首次 push 时 Windows 会自动弹出 GitHub 浏览器授权页，点「Authorize」即可。
+   或者直接用桌面的 `push-coursework.bat` / 仓库里的 `commit-and-push.bat` 双击即可。
+3. 首次 push 时 Windows 会自动弹出 GitHub 浏览器授权页，点 **Authorize** 即可。
 
-## Commit 规范建议
+## Commit 规范建议（详细模板见 `.gitmessage`）
 
-- `homework-XX: <做了什么>` —— 例：`homework-01: 完成 K-means 聚类实验`
-- `docs: <文档/说明改动>`
+- `feat(homework-XX): <一句话>` —— 新作业 / 新功能
+- `docs: <文档改动>`
 - `fix: <bug 修复>`
+- `chore: <杂项 / 工具调整>`
+
+启用 commit 模板（只需执行一次）：
+
+```bash
+git config --local commit.template .gitmessage
+```

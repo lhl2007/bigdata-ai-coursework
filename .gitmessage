@@ -1,0 +1,43 @@
+# Commit 信息模板（.gitmessage）
+
+把这个文件作为 commit 模板，能帮你写出规范的 commit。
+
+## 启用方法
+
+```bash
+git config --local commit.template .gitmessage
+```
+
+之后 `git commit` 时不带 `-m` 就会进入编辑器，看到这个模板。
+
+## 推荐格式
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**type**:
+- `feat`: 新功能 / 新作业
+- `fix`: 修复
+- `docs`: 仅文档变更
+- `style`: 格式（不影响代码运行）
+- `refactor`: 重构
+- `test`: 测试
+- `chore`: 构建/工具/杂项
+
+**scope**: 作业编号或模块，如 `homework-01`、`notes`
+
+**subject**: 一句话描述，使用动词开头，不超过 50 字
+
+---
+
+# 本次 commit 要写的内容（删掉这段再写）
+# type(scope): subject
+#
+# 详细说明（每行不超过 72 字）
+#
+# 关联: homework-XX / issue / 链接
